@@ -1,0 +1,67 @@
+use chinook;
+
+/*
+DATABASES
+Chinook
+MySQL SQL Exercises
+*/
+
+-- 1.	How many songs are there in the playlist “Grunge”?
+SELECT COUNT(t.TrackId) FROM playlist
+JOIN playlisttrack p on playlist.PlaylistId = p.PlaylistId
+JOIN track t on p.TrackId = t.TrackId
+WHERE playlist.Name = 'Grunge';
+
+-- 2.	Show information about artists whose name includes the text “Jack” and about artists whose name includes the text “John”, but not the text “Martin”.
+SELECT * FROM artist
+WHERE Name LIKE '%Jack%' OR Name LIKE '%John%' AND Name NOT LIKE '%Martin%';
+
+-- 3.	For each country where some invoice has been issued, show the total invoice monetary amount, but only for countries where at least $100 have been invoiced. Sort the information from higher to lower monetary amount.
+SELECT DISTINCT invoice.BillingCountry, SUM(invoice.Total) FROM invoice
+GROUP BY invoice.billingCountry
+HAVING SUM(invoice.Total) > 100
+ORDER BY SUM(invoice.Total) DESC;
+
+-- 4.	Get the phone number of the boss of those employees who have given support to clients who have bought some song composed by “Miles Davis” in “MPEG Audio File” format.
+SELECT employee.Phone FROM employee
+WHERE EmployeeId IN(
+    SELECT employee.ReportsTo FROM employee
+    JOIN customer c on employee.EmployeeId = c.SupportRepId
+    JOIN invoice i on c.CustomerId = i.CustomerId
+    JOIN invoiceline i2 on i.InvoiceId = i2.InvoiceId
+    JOIN track t on i2.TrackId = t.TrackId
+    JOIN mediatype m on t.MediaTypeId = m.MediaTypeId
+    WHERE t.Composer = 'Miles Davis' AND m.Name = 'MPEG Audio File'
+);
+
+-- 5.	Show the information, without repeated records, of all albums that feature songs of the “Bossa Nova” genre whose title starts by the word “Samba”.
+SELECT DISTINCT * FROM album
+JOIN track t on t.AlbumId = album.AlbumId
+JOIN genre g on t.GenreId = g.GenreId
+WHERE t.Name LIKE 'Samba %' AND g.Name = 'Bossa Nova';
+
+-- 6.	For each genre, show the average length of its songs in minutes (without indicating seconds). Use the headers “Genre” and “Minutes”, and include only genres that have any song longer than half an hour.
+SELECT g.Name AS Genre, ROUND(AVG(Milliseconds) / 1000 / 60, 1) AS Minutes FROM track
+JOIN genre g on track.GenreId = g.GenreId
+GROUP BY g.Name
+HAVING max(Milliseconds) > 30*60*1000;
+
+-- 7.	How many client companies have no state?
+SELECT COUNT(*) FROM customer
+WHERE State IS NULL AND Company IS NOT NULL;
+
+-- 8.	For each employee with clients in the “USA”, “Canada” and “Mexico” show the number of clients from these countries s/he has given support, only when this number is higher than 6. Sort the query by number of clients. Regarding the employee, show his/her first name and surname separated by a space. Use “Employee” and “Clients” as headers.
+SELECT CONCAT(employee.FirstName, ' ', employee.LastName) AS Employee, COUNT(c.CustomerId) AS Clients FROM employee
+JOIN customer c on employee.EmployeeId = c.SupportRepId
+WHERE c.Country IN('USA', 'Canada', 'Mexico')
+GROUP BY employee.EmployeeId
+HAVING COUNT(c.CustomerId) > 6
+ORDER BY COUNT(c.CustomerId);
+
+-- 9.	For each client from the “USA”, show his/her surname and name (concatenated and separated by a comma) and their fax number. If they do not have a fax number, show the text “S/he has no fax”. Sort by surname and first name.
+SELECT CONCAT(LastName, ',', FirstName), IFNULL(Fax, 'S/he has no fax') FROM customer
+WHERE Country = 'USA'
+ORDER BY LastName, FirstName;
+
+-- 10.	For each employee, show his/her first name, last name, and their age at the time they were hired.
+SELECT FirstName, LastName, FLOOR(DATEDIFF(HireDate, BirthDate) / 356.25) AS Age FROM employee;
